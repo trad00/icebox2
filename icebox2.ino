@@ -1,4 +1,4 @@
-#define VER "ver 2.5"
+#define VER "ver 2.6"
 
 #include <FS.h>
 #include <ESP8266httpUpdate.h>
