@@ -45,9 +45,13 @@ char ddnsDomain[150] = DDNS_DOMAIN;
 char ddnsToken[40] = DDNS_TOKEN;
 
 //загрузка обновлений
-char updateDomain[150] = UPDATE_DOMAIN;
-char updatePath[100] = UPDATE_PATH;
-int updatePort = 80;
+//char updateDomain[150] = UPDATE_DOMAIN;
+//char updatePath[100] = UPDATE_PATH;
+//int updatePort = 80;
+char updateDomain[150] = "github.com";
+char updatePath[100] = "/trad00/icebox2/raw/master/icebox2.ino.nodemcu.bin";
+int updatePort = 443;
+
 
 //выгрузка телеметрии
 char telemetryDomain[150] = TELEMETRY_DOMAIN;
