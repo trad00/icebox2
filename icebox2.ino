@@ -1,4 +1,4 @@
-#define VER "ver 2.6"
+#define VER "ver 2.7"
 
 #include <FS.h>
 #include <ESP8266httpUpdate.h>
@@ -45,9 +45,13 @@ char ddnsDomain[150] = DDNS_DOMAIN;
 char ddnsToken[40] = DDNS_TOKEN;
 
 //загрузка обновлений
-char updateDomain[150] = UPDATE_DOMAIN;
-char updatePath[100] = UPDATE_PATH;
-int updatePort = 80;
+//char updateDomain[150] = UPDATE_DOMAIN;
+//char updatePath[100] = UPDATE_PATH;
+//int updatePort = 80;
+char updateDomain[150] = "github.com";
+char updatePath[100] = "/trad00/icebox2/raw/master/icebox2.ino.nodemcu.bin";
+int updatePort = 443;
+
 
 //выгрузка телеметрии
 char telemetryDomain[150] = TELEMETRY_DOMAIN;
@@ -330,18 +334,20 @@ void setup() {
     Serial.print("update check... ");
     
     WiFiClient client;
-    ESPhttpUpdate.rebootOnUpdate(true);
-    t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, updatePort, updatePath);
-    switch(ret) {
-      case HTTP_UPDATE_FAILED:
-        Serial.println("[update] Update failed.");
-        break;
-      case HTTP_UPDATE_NO_UPDATES:
-        Serial.println("[update] Update no Update.");
-        break;
-      case HTTP_UPDATE_OK:
-        Serial.println("[update] Update ok."); // may not called we reboot the ESP
-        break;
+    if (client.connect(updateDomain, updatePort)) {
+      ESPhttpUpdate.rebootOnUpdate(true);
+      t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, updatePath);
+      switch(ret) {
+        case HTTP_UPDATE_FAILED:
+          Serial.println("[update] Update failed.");
+          break;
+        case HTTP_UPDATE_NO_UPDATES:
+          Serial.println("[update] Update no Update.");
+          break;
+        case HTTP_UPDATE_OK:
+          Serial.println("[update] Update ok."); // may not called we reboot the ESP
+          break;
+      }
     }
   
     EasyDDNS.service(ddnsService);
