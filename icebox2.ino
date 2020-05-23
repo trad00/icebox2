@@ -330,13 +330,22 @@ void setup() {
     unsigned long time = millis();
     
     Serial.print("update check... ");
+    Serial.print("connect to ");
+    Serial.print(updateDomain);
+    Serial.print(":");
+    Serial.println(updatePort);
     
     WiFiClient client;
-    if (client.connect(updateDomain, updatePort)) {
+    int connect_ret = client.connect(updateDomain, updatePort);
+    Serial.print("connect_ret ");
+    Serial.println(connect_ret);
+    
+    if (connect_ret) {
 
       bool do_update = false;
       
       HTTPClient http;
+      Serial.println(String(updatePath) + "ver.info");
       bool ret = http.begin(client, String(updatePath) + "ver.info");
       if (ret) {
         t_http_codes http_ret = (t_http_codes)http.GET();
@@ -347,6 +356,8 @@ void setup() {
           Serial.println("ver");
           do_update = ver > INTVER;
         }
+      } else {
+        Serial.println("http not begin");
       }
 
       if (do_update) {
@@ -366,6 +377,7 @@ void setup() {
         }
       }
     }
+    Serial.print("update done");
   
     EasyDDNS.service(ddnsService);
     EasyDDNS.client(ddnsDomain, ddnsToken);
