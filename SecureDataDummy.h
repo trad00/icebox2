@@ -4,8 +4,8 @@
 #define DDNS_TOKEN "00000000-0000-0000-0000-000000000000"
 
 //загрузка обновлений
-#define UPDATE_DOMAIN "dummy.domain.com"
-#define UPDATE_PATH "/esp/upd/"
+#define UPDATE_DOMAIN "github.com"
+#define UPDATE_PATH "/trad00/icebox2/raw/master/"
 
 //выгрузка телеметрии
 #define TELEMETRY_DOMAIN "dummy.domain.com"

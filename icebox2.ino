@@ -41,21 +41,19 @@ int webServerPort = 81;
 #include "SecureData.h"
 //#include "SecureDataDummy.h"
 //динамический DNS
-char ddnsService[20] = DDNS_SERVICE;
-char ddnsDomain[150] = DDNS_DOMAIN;
+char ddnsService[30] = DDNS_SERVICE;
+char ddnsDomain[100] = DDNS_DOMAIN;
 char ddnsToken[40] = DDNS_TOKEN;
 
 //загрузка обновлений
-//char updateDomain[150] = UPDATE_DOMAIN;
-//char updatePath[100] = UPDATE_PATH;
+char updateDomain[100] = UPDATE_DOMAIN;
+char updatePath[100] = UPDATE_PATH;
 //int updatePort = 80;
-char updateDomain[150] = "github.com";
-char updatePath[100] = "/trad00/icebox2/raw/master/icebox2.ino.nodemcu.bin";
 int updatePort = 443;
 
 
 //выгрузка телеметрии
-char telemetryDomain[150] = TELEMETRY_DOMAIN;
+char telemetryDomain[100] = TELEMETRY_DOMAIN;
 char telemetryPath[100] = TELEMETRY_PATH;
 int telemetryPort = 80;
 
@@ -226,10 +224,10 @@ bool connectWiFi(bool startConfigPortal = false) {
   loadConfig();
 
   WiFiManagerParameter custom_webServerPort("webServerPort", "web server port", String(webServerPort).c_str(), 6);
-  WiFiManagerParameter custom_ddnsService("ddnsService", "ddns service", ddnsService, 20);
-  WiFiManagerParameter custom_ddnsDomain("ddnsDomain", "ddns domain", ddnsDomain, 150);
+  WiFiManagerParameter custom_ddnsService("ddnsService", "ddns service", ddnsService, 30);
+  WiFiManagerParameter custom_ddnsDomain("ddnsDomain", "ddns domain", ddnsDomain, 100);
   WiFiManagerParameter custom_ddnsToken("ddnsToken", "ddns token", ddnsToken, 40);
-  WiFiManagerParameter custom_updateDomain("updateDomain", "update domain", updateDomain, 150);
+  WiFiManagerParameter custom_updateDomain("updateDomain", "update domain", updateDomain, 100);
   WiFiManagerParameter custom_updatePath("updatePath", "update path", updatePath, 100);
   WiFiManagerParameter custom_updatePort("updatePort", "update port", String(updatePort).c_str(), 6);
 
@@ -339,9 +337,9 @@ void setup() {
       bool do_update = false;
       
       HTTPClient http;
-      bool ret = http.begin(client, updatePath + "ver");
+      bool ret = http.begin(client, String(updatePath) + "ver.info");
       if (ret) {
-        t_http_codes http_ret = http.GET();
+        t_http_codes http_ret = (t_http_codes)http.GET();
         if (http_ret == HTTP_CODE_OK) {
           do_update = http.getString().toInt() > INTVER;
         }
@@ -350,7 +348,7 @@ void setup() {
       if (do_update) {
         Serial.println("do_update");
         ESPhttpUpdate.rebootOnUpdate(true);
-        t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, updatePath + "icebox2.ino.nodemcu.bin");
+        t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, String(updatePath) + "icebox2.ino.nodemcu.bin");
         switch(ret) {
           case HTTP_UPDATE_FAILED:
             Serial.println("[update] Update failed.");
