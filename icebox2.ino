@@ -349,7 +349,7 @@ void setup() {
     }
     
     if (do_update) {
-      Serial.println("do_update");
+      Serial.println("do update");
       ESPhttpUpdate.rebootOnUpdate(false);
       t_httpUpdate_return ret = ESPhttpUpdate.update(client, github_upd_bin);
       switch(ret) {
