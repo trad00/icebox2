@@ -252,7 +252,7 @@ bool connectWiFi(bool startConfigPortal = false) {
   wifiManager.addParameter(&custom_t3idx);
   wifiManager.addParameter(&custom_t4idx);
   
-  wifiManager.resetSettings();
+//  wifiManager.resetSettings();
   wifiManager.setConfigPortalTimeout(30);
 
   if (startConfigPortal) {
@@ -340,8 +340,12 @@ void setup() {
       bool ret = http.begin(client, String(updatePath) + "ver.info");
       if (ret) {
         t_http_codes http_ret = (t_http_codes)http.GET();
+        Serial.print("http_ret ");
+        Serial.println(http_ret);
         if (http_ret == HTTP_CODE_OK) {
-          do_update = http.getString().toInt() > INTVER;
+          int ver = http.getString().toInt();
+          Serial.println("ver");
+          do_update = ver > INTVER;
         }
       }
 
