@@ -1,5 +1,5 @@
-#define VER "ver 2.7"
-#define INTVER 27
+#define VER "ver 2.8"
+#define INTVER 28000
 
 #include <FS.h>
 #include <ESP8266httpUpdate.h>
@@ -46,10 +46,13 @@ char ddnsDomain[100] = DDNS_DOMAIN;
 char ddnsToken[40] = DDNS_TOKEN;
 
 //загрузка обновлений
-char updateDomain[100] = UPDATE_DOMAIN;
-char updatePath[100] = UPDATE_PATH;
+//char updateDomain[100] = UPDATE_DOMAIN;
+//char updatePath[100] = UPDATE_PATH;
 //int updatePort = 80;
-int updatePort = 443;
+//int updatePort = 443;
+const char* github_fingerprint = "70 94 de dd e6 c4 69 48 3a 92 70 a1 48 56 78 2d 18 64 e0 b7";
+const char* github_upd_ver = "https://raw.githubusercontent.com/trad00/icebox2/master/ver.info";
+const char* github_upd_bin = "https://raw.githubusercontent.com/trad00/icebox2/master/icebox2.ino.nodemcu.bin";
 
 
 //выгрузка телеметрии
@@ -184,9 +187,9 @@ void loadConfig() {
           strcpy(ddnsService, json["ddnsService"]);
           strcpy(ddnsDomain, json["ddnsDomain"]);
           strcpy(ddnsToken, json["ddnsToken"]);
-          strcpy(updateDomain, json["updateDomain"]);
-          strcpy(updatePath, json["updatePath"]);
-          updatePort = json["updatePort"];
+//          strcpy(updateDomain, json["updateDomain"]);
+//          strcpy(updatePath, json["updatePath"]);
+//          updatePort = json["updatePort"];
         }
         
         configFile.close();
@@ -203,9 +206,9 @@ void saveConfig() {
     json["ddnsService"] = ddnsService;
     json["ddnsDomain"] = ddnsDomain;
     json["ddnsToken"] = ddnsToken;
-    json["updateDomain"] = updateDomain;
-    json["updatePath"] = updatePath;
-    json["updatePort"] = updatePort;
+//    json["updateDomain"] = updateDomain;
+//    json["updatePath"] = updatePath;
+//    json["updatePort"] = updatePort;
 
     File configFile = SPIFFS.open("/ref_config.json", "w");
     if (configFile) {
@@ -227,9 +230,9 @@ bool connectWiFi(bool startConfigPortal = false) {
   WiFiManagerParameter custom_ddnsService("ddnsService", "ddns service", ddnsService, 30);
   WiFiManagerParameter custom_ddnsDomain("ddnsDomain", "ddns domain", ddnsDomain, 100);
   WiFiManagerParameter custom_ddnsToken("ddnsToken", "ddns token", ddnsToken, 40);
-  WiFiManagerParameter custom_updateDomain("updateDomain", "update domain", updateDomain, 100);
-  WiFiManagerParameter custom_updatePath("updatePath", "update path", updatePath, 100);
-  WiFiManagerParameter custom_updatePort("updatePort", "update port", String(updatePort).c_str(), 6);
+//  WiFiManagerParameter custom_updateDomain("updateDomain", "update domain", updateDomain, 100);
+//  WiFiManagerParameter custom_updatePath("updatePath", "update path", updatePath, 100);
+//  WiFiManagerParameter custom_updatePort("updatePort", "update port", String(updatePort).c_str(), 6);
 
   WiFiManagerParameter custom_t1idx("t1idx", "index t1", String(params.trm1).c_str(), 3);
   WiFiManagerParameter custom_t2idx("t2idx", "index t2", String(params.trm2).c_str(), 3);
@@ -243,9 +246,9 @@ bool connectWiFi(bool startConfigPortal = false) {
   wifiManager.addParameter(&custom_ddnsService);
   wifiManager.addParameter(&custom_ddnsDomain);
   wifiManager.addParameter(&custom_ddnsToken);
-  wifiManager.addParameter(&custom_updateDomain);
-  wifiManager.addParameter(&custom_updatePath);
-  wifiManager.addParameter(&custom_updatePort);
+//  wifiManager.addParameter(&custom_updateDomain);
+//  wifiManager.addParameter(&custom_updatePath);
+//  wifiManager.addParameter(&custom_updatePort);
   
   wifiManager.addParameter(&custom_t1idx);
   wifiManager.addParameter(&custom_t2idx);
@@ -270,9 +273,9 @@ bool connectWiFi(bool startConfigPortal = false) {
   strcpy(ddnsService,  custom_ddnsService.getValue());
   strcpy(ddnsDomain,   custom_ddnsDomain.getValue());
   strcpy(ddnsToken,    custom_ddnsToken.getValue());
-  strcpy(updateDomain, custom_updateDomain.getValue());
-  strcpy(updatePath,   custom_updatePath.getValue());
-  updatePort = String(custom_updatePort.getValue()).toInt();
+//  strcpy(updateDomain, custom_updateDomain.getValue());
+//  strcpy(updatePath,   custom_updatePath.getValue());
+//  updatePort = String(custom_updatePort.getValue()).toInt();
 
   params.trm1 = String(custom_t1idx.getValue()).toInt();
   params.trm2 = String(custom_t2idx.getValue()).toInt();
@@ -330,51 +333,35 @@ void setup() {
     unsigned long time = millis();
     
     Serial.print("update check... ");
-    Serial.print("connect to ");
-    Serial.print(updateDomain);
-    Serial.print(":");
-    Serial.println(updatePort);
     
-    WiFiClient client;
-    int connect_ret = client.connect(updateDomain, updatePort);
-    Serial.print("connect_ret ");
-    Serial.println(connect_ret);
-    
-    if (connect_ret) {
+    WiFiClientSecure client;
+    client.setFingerprint(github_fingerprint);
+    HTTPClient https;
 
-      bool do_update = false;
-      
-      HTTPClient http;
-      Serial.println(String(updatePath) + "ver.info");
-      bool ret = http.begin(client, String(updatePath) + "ver.info");
-      if (ret) {
-        t_http_codes http_ret = (t_http_codes)http.GET();
-        Serial.print("http_ret ");
-        Serial.println(http_ret);
-        if (http_ret == HTTP_CODE_OK) {
-          int ver = http.getString().toInt();
-          Serial.println("ver");
-          do_update = ver > INTVER;
-        }
-      } else {
-        Serial.println("http not begin");
+    bool do_update = false;
+    
+    if (https.begin(client, github_upd_ver)) {
+      int httpCode = https.GET();
+      if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+        int ver = https.getString().toInt();
+        do_update = ver > INTVER;
       }
-
-      if (do_update) {
-        Serial.println("do_update");
-        ESPhttpUpdate.rebootOnUpdate(true);
-        t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, String(updatePath) + "icebox2.ino.nodemcu.bin");
-        switch(ret) {
-          case HTTP_UPDATE_FAILED:
-            Serial.println("[update] Update failed.");
-            break;
-          case HTTP_UPDATE_NO_UPDATES:
-            Serial.println("[update] Update no Update.");
-            break;
-          case HTTP_UPDATE_OK:
-            Serial.println("[update] Update ok."); // may not called we reboot the ESP
-            break;
-        }
+    }
+    
+    if (do_update) {
+      Serial.println("do_update");
+      ESPhttpUpdate.rebootOnUpdate(true);
+      t_httpUpdate_return ret = ESPhttpUpdate.update(client, github_upd_bin);
+      switch(ret) {
+        case HTTP_UPDATE_FAILED:
+          Serial.println("[update] Update failed.");
+          break;
+        case HTTP_UPDATE_NO_UPDATES:
+          Serial.println("[update] Update no Update.");
+          break;
+        case HTTP_UPDATE_OK:
+          Serial.println("[update] Update ok."); // may not called we reboot the ESP
+          break;
       }
     }
     Serial.print("update done");
