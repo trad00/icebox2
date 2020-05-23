@@ -1,4 +1,5 @@
 #define VER "ver 2.7"
+#define INTVER 27
 
 #include <FS.h>
 #include <ESP8266httpUpdate.h>
@@ -65,7 +66,6 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 ESP8266WebServer* server = NULL;
-HTTPClient http;
 
 //камеры и дисплей
 Ref ref1(RELAY1, RELAY2);
@@ -254,7 +254,7 @@ bool connectWiFi(bool startConfigPortal = false) {
   wifiManager.addParameter(&custom_t3idx);
   wifiManager.addParameter(&custom_t4idx);
   
-  //wifiManager.resetSettings();
+  wifiManager.resetSettings();
   wifiManager.setConfigPortalTimeout(30);
 
   if (startConfigPortal) {
@@ -335,18 +335,33 @@ void setup() {
     
     WiFiClient client;
     if (client.connect(updateDomain, updatePort)) {
-      ESPhttpUpdate.rebootOnUpdate(true);
-      t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, updatePath);
-      switch(ret) {
-        case HTTP_UPDATE_FAILED:
-          Serial.println("[update] Update failed.");
-          break;
-        case HTTP_UPDATE_NO_UPDATES:
-          Serial.println("[update] Update no Update.");
-          break;
-        case HTTP_UPDATE_OK:
-          Serial.println("[update] Update ok."); // may not called we reboot the ESP
-          break;
+
+      bool do_update = false;
+      
+      HTTPClient http;
+      bool ret = http.begin(client, updatePath + "ver");
+      if (ret) {
+        t_http_codes http_ret = http.GET();
+        if (http_ret == HTTP_CODE_OK) {
+          do_update = http.getString().toInt() > INTVER;
+        }
+      }
+
+      if (do_update) {
+        Serial.println("do_update");
+        ESPhttpUpdate.rebootOnUpdate(true);
+        t_httpUpdate_return ret = ESPhttpUpdate.update(client, updateDomain, updatePath + "icebox2.ino.nodemcu.bin");
+        switch(ret) {
+          case HTTP_UPDATE_FAILED:
+            Serial.println("[update] Update failed.");
+            break;
+          case HTTP_UPDATE_NO_UPDATES:
+            Serial.println("[update] Update no Update.");
+            break;
+          case HTTP_UPDATE_OK:
+            Serial.println("[update] Update ok."); // may not called we reboot the ESP
+            break;
+        }
       }
     }
   
