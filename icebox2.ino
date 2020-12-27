@@ -1,13 +1,14 @@
-#define VER "ver 2.8"
-#define INTVER 28000
+#define VER "ver 2.9"
+#define INTVER 29000
 
-#include <FS.h>
+//#include <FS.h>
 #include <ESP8266httpUpdate.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 #include <ArduinoJson.h>
-#include <EasyDDNS.h>
+#include <LittleFS.h>
+//#include <EasyDDNS.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <EEPROM.h>
@@ -171,6 +172,26 @@ void buttonHandleEvent(AceButton* /*button*/, uint8_t eventType, uint8_t /*butto
 }
 
 void loadConfig() {
+
+  const int capacity = JSON_OBJECT_SIZE(1000);
+  StaticJsonDocument<capacity> conf;
+  
+  LittleFS.begin();
+  File file = LittleFS.open("/ref_config.json", "r");
+  if (file)
+  {
+    deserializeJson(conf, file);
+    
+    webServerPort = conf["webServerPort"];
+    strcpy(ddnsService, conf["ddnsService"]);
+    strcpy(ddnsDomain, conf["ddnsDomain"]);
+    strcpy(ddnsToken, conf["ddnsToken"]);
+//    strcpy(updateDomain, json["updateDomain"]);
+//    strcpy(updatePath, json["updatePath"]);
+//    updatePort = json["updatePort"];
+  }
+
+/*    
   if (SPIFFS.begin()) {
     if (SPIFFS.exists("/ref_config.json")) {
       File configFile = SPIFFS.open("/ref_config.json", "r");
@@ -196,9 +217,28 @@ void loadConfig() {
       }
     }
   }  
+*/
 }
 
+
 void saveConfig() {
+  
+  const int capacity = JSON_OBJECT_SIZE(1000);
+  StaticJsonDocument<capacity> conf;
+  
+    conf["webServerPort"] = webServerPort;
+    conf["ddnsService"] = ddnsService;
+    conf["ddnsDomain"] = ddnsDomain;
+    conf["ddnsToken"] = ddnsToken;
+//    conf["updateDomain"] = updateDomain;
+//    conf["updatePath"] = updatePath;
+//    conf["updatePort"] = updatePort;
+
+  LittleFS.begin();
+  File file = LittleFS.open("/ref_config.json", "w");
+  serializeJson(conf, file);
+
+/*    
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
     
@@ -215,6 +255,7 @@ void saveConfig() {
       json.printTo(configFile);
       configFile.close();
     }
+*/
 }
 
 bool shouldSaveConfig = false;
@@ -366,9 +407,9 @@ void setup() {
     }
     Serial.print("update done");
   
-    EasyDDNS.service(ddnsService);
-    EasyDDNS.client(ddnsDomain, ddnsToken);
-    EasyDDNS.update(0);
+//    EasyDDNS.service(ddnsService);
+//    EasyDDNS.client(ddnsDomain, ddnsToken);
+//    EasyDDNS.update(0);
     httpServerConfig();
 
     if (time + 5000 > millis())
@@ -384,7 +425,7 @@ void setup() {
 
 void loop() {
   if (WiFi.status() == WL_CONNECTED) {
-    EasyDDNS.update(300000);
+    //EasyDDNS.update(300000);
     if (server)
       server->handleClient();
   }
